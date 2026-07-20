@@ -1,0 +1,23 @@
+{
+  "name": "wo-bot-signal",
+  "version": "1.0.0",
+  "description": "WebRTC signaling server for wo-bot remote control",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "@types/jsonwebtoken": "^9.0.7",
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  }
+}

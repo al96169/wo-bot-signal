@@ -1,0 +1,18 @@
+services:
+  wo-bot-signal:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+
+  coturn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    # host 网络模式以获取真实 IP（TURN 需要）
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: ["-c", "/etc/coturn/turnserver.conf"]
