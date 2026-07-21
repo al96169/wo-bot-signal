@@ -125,10 +125,7 @@ async function queryDeviceOwner(robotId: string): Promise<string | null> {
  * 2. 调用帐号服务器查询设备归属，比对 userId
  * 返回 userId（验证通过）或 null（失败）
  */
-export async function authenticateClient(
-  token: string,
-  robotId: string,
-): Promise<string | null> {
+export async function authenticateClient(token: string, robotId: string): Promise<string | null> {
   // 第 1 步：JWT 本地验证
   const jwtResult = verifyJwt(token);
   if (!jwtResult) return null;
@@ -164,11 +161,7 @@ export async function authenticateClient(
  * 机器人认证：HMAC-SHA256 + 时间戳窗口
  * 返回 deviceId（验证通过）或 null（失败）
  */
-export function authenticateRobot(
-  deviceId: string,
-  timestamp: string,
-  signature: string,
-): string | null {
+export function authenticateRobot(deviceId: string, timestamp: string, signature: string): string | null {
   if (!ROBOT_SECRET) {
     logger.error("[Auth] ROBOT_SECRET not configured");
     return null;

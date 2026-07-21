@@ -153,10 +153,7 @@ export function handleClientDisconnect(ws: WebSocket): void {
 }
 
 /** 处理信令消息 */
-export function handleMessage(
-  conn: Connection,
-  data: IncomingMessage,
-): void {
+export function handleMessage(conn: Connection, data: IncomingMessage): void {
   const { type } = data;
 
   switch (type) {

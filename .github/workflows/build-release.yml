@@ -1,0 +1,26 @@
+name: 构建与发布
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+
+jobs:
+  docker-build:
+    name: "Docker 镜像构建"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像（验证）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: wo-bot-signal:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
