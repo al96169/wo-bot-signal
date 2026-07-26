@@ -3,7 +3,7 @@ import { URL } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
 import { logger } from "./logger.js";
 import { authenticateClient, authenticateRobot, checkRateLimit } from "./auth.js";
-import { isDeviceOnline, getOnlineCount, getOnlineDevices } from "./devices.js";
+import { isDeviceOnline, getOnlineCount } from "./devices.js";
 import {
   handleRobotConnect,
   handleClientConnect,

@@ -1,11 +1,9 @@
 import type { WebSocket } from "ws";
 import { logger } from "./logger.js";
-import { deviceOnline, deviceOffline, isDeviceOnline } from "./devices.js";
+import { deviceOnline, deviceOffline } from "./devices.js";
 import { generateTurnCredentials } from "./turn.js";
 
 // ===== 类型定义 =====
-
-type Role = "robot" | "client";
 
 interface RobotConnection {
   role: "robot";
