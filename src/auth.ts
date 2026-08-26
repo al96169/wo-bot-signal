@@ -102,7 +102,8 @@ async function queryDeviceOwner(robotId: string): Promise<string | null> {
         "X-Robot-Id": robotId,
         "X-Timestamp": String(timestamp),
         "X-Signature": signature,
-        "User-Agent": "wo-bot-signal/1.0",
+        // 服务器 WAF 仅放行该 UA（与机器人注册同款）
+        "User-Agent": "wo-bot-control/1.0",
       },
     });
 
@@ -115,6 +116,41 @@ async function queryDeviceOwner(robotId: string): Promise<string | null> {
     return data.data?.userId ?? null;
   } catch (err) {
     logger.error(`[Auth] Owner query error: ${err}`);
+    return null;
+  }
+}
+
+/** 查询设备独立密钥哈希（调用帐号服务器 GET /api/devices/:robotId/secret-hash） */
+async function queryDeviceSecretHash(robotId: string): Promise<string | null> {
+  if (!ACCOUNT_API_URL) {
+    logger.error("[Auth] ACCOUNT_API_URL not configured");
+    return null;
+  }
+
+  const timestamp = Date.now();
+  const signature = signHmac(robotId, timestamp);
+
+  try {
+    const url = `${ACCOUNT_API_URL}/api/devices/${encodeURIComponent(robotId)}/secret-hash`;
+    const resp = await fetch(url, {
+      headers: {
+        "X-Robot-Id": robotId,
+        "X-Timestamp": String(timestamp),
+        "X-Signature": signature,
+        // 服务器 WAF 仅放行该 UA（与机器人注册同款）
+        "User-Agent": "wo-bot-control/1.0",
+      },
+    });
+
+    if (resp.status !== 200) {
+      logger.warn(`[Auth] Secret-hash query failed: ${resp.status} for ${robotId}`);
+      return null;
+    }
+
+    const data = (await resp.json()) as { success: boolean; data: { deviceSecretHash: string | null } };
+    return data.data?.deviceSecretHash ?? null;
+  } catch (err) {
+    logger.error(`[Auth] Secret-hash query error: ${err}`);
     return null;
   }
 }
@@ -158,15 +194,19 @@ export async function authenticateClient(token: string, robotId: string): Promis
 }
 
 /**
- * 机器人认证：HMAC-SHA256 + 时间戳窗口
+ * 机器人认证：
+ * - 新架构（deviceSecretHash 优先）：机器人连接时携带设备独立密钥哈希，
+ *   向帐号服务器查询该设备存储的哈希并比对（constant-time）。
+ *   未注册设备无哈希 → 拒绝连接（强制先完成云端注册，符合流程）。
+ * - 旧架构兼容：无 deviceSecretHash 时回退本地 ROBOT_SECRET HMAC 校验。
  * 返回 deviceId（验证通过）或 null（失败）
  */
-export function authenticateRobot(deviceId: string, timestamp: string, signature: string): string | null {
-  if (!ROBOT_SECRET) {
-    logger.error("[Auth] ROBOT_SECRET not configured");
-    return null;
-  }
-
+export async function authenticateRobot(
+  deviceId: string,
+  timestamp: string,
+  signature: string,
+  deviceSecretHash?: string,
+): Promise<string | null> {
   // 时间戳窗口：5 分钟
   const ts = Number(timestamp);
   if (!ts || isNaN(ts)) {
@@ -181,13 +221,33 @@ export function authenticateRobot(deviceId: string, timestamp: string, signature
     return null;
   }
 
-  // HMAC 比对
+  // 新架构：按设备 secretHash 验证（哈希即凭证，服务器无法反推明文 secret）
+  if (deviceSecretHash) {
+    const storedHash = await queryDeviceSecretHash(deviceId);
+    if (!storedHash) {
+      logger.info(`[Auth] Robot ${deviceId} not registered (no device secret hash)`);
+      return null;
+    }
+    if (!timingSafeEqual(deviceSecretHash, storedHash)) {
+      logger.warn(`[Auth] Robot auth: device secret hash mismatch for ${deviceId}`);
+      return null;
+    }
+    logger.info(`[Auth] Robot authenticated (device secret): ${deviceId}`);
+    return deviceId;
+  }
+
+  // 旧架构兼容：全局 ROBOT_SECRET HMAC 校验
+  if (!ROBOT_SECRET) {
+    logger.error("[Auth] ROBOT_SECRET not configured");
+    return null;
+  }
+
   const expectedSig = signHmac(deviceId, ts);
   if (!timingSafeEqual(signature, expectedSig)) {
     logger.warn(`[Auth] Robot auth: signature mismatch for ${deviceId}`);
     return null;
   }
 
-  logger.info(`[Auth] Robot authenticated: ${deviceId}`);
+  logger.info(`[Auth] Robot authenticated (legacy HMAC): ${deviceId}`);
   return deviceId;
 }

@@ -96,6 +96,7 @@ async function handleRobotConnection(ws: WebSocket, url: URL, ip: string): Promi
   const deviceId = url.searchParams.get("deviceId") || "";
   const timestamp = url.searchParams.get("timestamp") || "";
   const signature = url.searchParams.get("signature") || "";
+  const deviceSecretHash = url.searchParams.get("deviceSecretHash") || "";
 
   if (!deviceId || !timestamp || !signature) {
     logger.warn(`[WS] Robot missing auth params, ip=${ip}`);
@@ -103,7 +104,7 @@ async function handleRobotConnection(ws: WebSocket, url: URL, ip: string): Promi
     return;
   }
 
-  const result = authenticateRobot(deviceId, timestamp, signature);
+  const result = await authenticateRobot(deviceId, timestamp, signature, deviceSecretHash || undefined);
   if (!result) {
     ws.close(1008, "Authentication failed");
     return;
