@@ -183,18 +183,20 @@ function handleCall(conn: Connection, data: IncomingMessage): void {
   }
 
   // 生成 TURN 凭证
-  let turn: { username: string; credential: string; ttl: number } | null = null;
+  let turn: { username: string; credential: string; ttl: number; host: string } | null = null;
   try {
     turn = generateTurnCredentials(conn.userId);
   } catch (err) {
     logger.error(`[Signal] Failed to generate TURN credentials: ${err}`);
   }
 
-  // 转发 call 给机器人
+  // 转发 call 给机器人（携带 TURN 凭证：机器人端也必须配置 TURN，
+  // 否则 4G 手机的 relay 候选无法与机器人匹配）
   send(room.robot.ws, {
     type: "call",
     clientId: conn.userId,
     sdp: data.sdp,
+    turn,
   });
 
   // 回复客户端：携带 TURN 凭证
