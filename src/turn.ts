@@ -13,7 +13,12 @@ if (!TURN_SECRET) {
  * 生成 TURN 短期凭证（24h 有效）
  * 与 coturn 的 static-auth-secret + use-auth-secret 模式一致
  */
-export function generateTurnCredentials(userId: string): { username: string; credential: string; ttl: number; host: string } {
+export function generateTurnCredentials(userId: string): {
+  username: string;
+  credential: string;
+  ttl: number;
+  host: string;
+} {
   if (!TURN_SECRET) {
     throw new Error("TURN_SECRET not configured");
   }
